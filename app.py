@@ -1,10 +1,15 @@
-from model import load_dataset, fit, predict
+from load import load_dataset
+from model import fit_predict
+from outline import draw_outline
+from preprocess import preprocess
 
 
 def main():
-    train_input_fn, test_input_fn = load_dataset("dataset")
-    # estimator = fit(train_input_fn=train_input_fn)
-    # predict(estimator=estimator, test_input_fn=test_input_fn)
+    preprocess(input_dir="input", input_csv="data.csv", output_dir="output")
+    raw_train_ds, raw_val_ds, raw_test_ds = load_dataset("output")
+    history = fit_predict(raw_train_ds, raw_val_ds, raw_test_ds)
+    draw_outline(history)
+    pass
 
 
 if __name__ == '__main__':
