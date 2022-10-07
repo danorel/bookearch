@@ -1,10 +1,47 @@
 import os
+import re
+import string
+
+import nltk
 import pandas as pd
+
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('punkt')
+nltk.download('omw-1.4')
+
+from nltk.corpus import stopwords
+from nltk import word_tokenize
+from nltk.stem import WordNetLemmatizer, PorterStemmer
+
+lemma = WordNetLemmatizer()
+stemmer = PorterStemmer()
+
+
+def preprocess_text(text):
+    words = word_tokenize(text)
+    words = [lemma.lemmatize(word) for word in words if word not in set(stopwords.words('english'))]
+    words = [stemmer.stem(word) for word in words]
+    return " ".join(words)
+
+
+def clean_text(text):
+    text = str(text).lower()  # Lowering the case
+    text = re.sub('\[.*?\]', '', text)  # Remove any text in the square brackets
+    text = re.sub('https?://\S+|www\.\S+', '', text)  # Remove any links present
+    text = re.sub('<.*?>+', '', text)  #
+    text = re.sub('[%s]' % re.escape(string.punctuation), '', text)  # Remove punctuation
+    text = re.sub('\n', '', text)  # Removing the next line character
+    text = re.sub('\w*\d\w*', '', text)  # Removing the words containing numbers
+    text = re.sub('[^a-zA-Z]', ' ', text)
+    return text
 
 
 def load(input_dir: str, input_csv: str = "data.csv"):
     filepath_or_buffer = os.path.join(input_dir, input_csv)
     df = pd.read_csv(filepath_or_buffer)
+    df['summary'] = df['summary'].apply(clean_text)
+    df['summary'] = df['summary'].apply(preprocess_text)
     df.info()
     return df
 
@@ -36,15 +73,15 @@ def organize(output_dir: str, df_genres):
         if not os.path.exists(filepath_genre):
             os.makedirs(filepath_genre)
             for _, row in df_genre.iterrows():
-                title = row['title']
+                index = row['index']
                 summary = row['summary']
-                filename_genre = f"{title}.txt"
+                filename_genre = f"{index}.txt"
                 with open(os.path.join(filepath_genre, filename_genre), 'w') as summary_file:
                     summary_file.write(summary)
     pass
 
 
-def preprocess(input_dir: str, input_csv: str, output_dir: str):
+def pipe(input_dir: str, input_csv: str, output_dir: str):
     df = load(input_dir, input_csv)
     df = encode(df)
     organize(output_dir, df_genres=split(df))
